@@ -1,7 +1,7 @@
 clc;
 clear;
 
-%% Pre Processing
+%% Pre Processing for Small Data
 
 rawdata = readtable('AmericaStateHospitalRawData.csv');
 clc;
@@ -12,9 +12,9 @@ processesed_data(:,4) = [];
 
 xx = processesed_data.State;
 states = unique(xx,'stable');
+
 number_of_questions= cellfun(@(x) sum(ismember(xx,x)), states,'un',0);
 number_of_questions = number_of_questions{1};
-new_table = states;
 
 % Edit Headings
 questions = processesed_data.HCAHPSQuestion(1:number_of_questions)';
@@ -35,7 +35,8 @@ questions = replace(questions,'on_a_scale_from_0_(lowest)_to_10_(highest)','');
 questions = replace(questions,'the_area_around_','');
 
 
-% Make Table Of answers with questions as headings
+
+% Make a table of answers with questions as headings
 answers_row = processesed_data(1 + number_of_questions - number_of_questions:number_of_questions,3);
 answers_row = table2array(answers_row);
 answers = array2table(answers_row.');
@@ -47,10 +48,15 @@ for i = 2:size(states,1)
 end
 answers.Properties.VariableNames = questions;
 
+% Create New Table 
 answers.States = states;
+new_table = answers (:,[end 1:end-1]);
 
 
-
-
+%% Pre Processing for Large Data
+% rawdata = readtable('AllAmericaHospitalRawData.csv');
+% clc;
+% processesed_data = rawdata;
+% % processesed_data(:,3) = [];
 
 
