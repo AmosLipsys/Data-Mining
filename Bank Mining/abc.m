@@ -1,74 +1,25 @@
 clc
 clear
 
-file_name = 'bank-full.csv';
+file_name = 'weather_nominal2.csv';
 
 % PreProcessing Step
 processed_data = Preprocessing(file_name);
 
 
-
-percent_training = .99;
-% Seperate Training and Testing Data
-[training_data, testing_data] = SplitData(processed_data, percent_training);
-
 % Classifying Step
 classifed_data = ClassifyData(processed_data);
 
 % Testing Step
-results = TestingWithTable(testing_data, classifed_data);
-writetable(processed_data,'myData.csv','Delimiter',',');
+results = TestingWithTable(processed_data, classifed_data);
+
 
 function processed_data = Preprocessing(file_name)
     %Try to open file
-    try
-        raw_data = readtable(file_name);
+    processed_data = readtable(file_name);
+    
         
-    catch ME
-        disp(ME.message)
-        disp('Make sure the file in the same folder as this code :)')
-        processed_data = [];
-        return
-    end
-    
-    % Deleate Row: Days beacuse the day in terms of 1 - 365 seems
-    % irrelvant
-    % Deleate Rows: pdays, previous, poutcome because of too much missing data
-    raw_data(:,[10,14:16]) = [];
-    
-    % Remove Rows with unknown data
-    processed_data = standardizeMissing(raw_data,'unknown');
-    processed_data = rmmissing(processed_data);
-    
-    % Make Final collumn logical (1: Yes, 0: No)
-    processed_data.y = strcmpi(processed_data.y, 'yes');
-    
-    % --AGE--
-    % 1: Young (0 - 34), 2: Middle Age (35 - 55) , 3: 55+
-    processed_data.age( processed_data.age < 35 ) = 1;
-    processed_data.age( 35 <= processed_data.age & processed_data.age < 55 ) = 2;
-    processed_data.age( processed_data.age >= 55 ) = 3;
-    
-    % --BALANCE-- 
-    % 1: Balance under 0, 2: Balance 0 - $1499, 3: Balance $1500+
-    processed_data.balance( 0 <= processed_data.balance & processed_data.balance <= 1499 ) = 2;
-    processed_data.balance( processed_data.balance < 0 ) = 1;
-    processed_data.balance( processed_data.balance >= 1500 ) = 3;
-    
-    % --DURATION(CAll)-- 
-    % 1: Less than 2 mins, 2: Between 2 - 5 mins, 3: More than 5 mins 
-    processed_data.duration( processed_data.duration <= 120) = 1;
-    processed_data.duration( processed_data.duration > 120 & processed_data.duration <= 300 ) = 2;
-    processed_data.duration( processed_data.duration > 300 ) = 3;
-    
-    % --CAMPAIN(Number of Calls)-- 
-    % 1: One, 2: Between 2 - 10 , 3: More than 10
-    processed_data.campaign( processed_data.campaign <= 1) = 1;
-    processed_data.campaign( processed_data.campaign > 1 & processed_data.campaign <= 10 ) = 2;
-    processed_data.campaign( processed_data.campaign > 10 ) = 3;
-    
-    
-    
+            
     end
 
 function var_map  =  ClassifyData(table)
@@ -78,8 +29,8 @@ function var_map  =  ClassifyData(table)
     vars_names(end) = [];
     
     amount_of_data = height(table);
-    total_win = sum(table.y);
-    total_lose = sum(~table.y);
+    total_win = sum(table.PlayGolf);
+    total_lose = sum(~table.PlayGolf);
     probability_win = total_win/amount_of_data;
     probability_lose = total_lose/amount_of_data;
     
@@ -102,8 +53,8 @@ function var_map  =  ClassifyData(table)
                         
             is_catagory = eq(variable_array, category);
             
-            amount_correct = sum(and(is_catagory, table.y));
-            amount_incorrect = sum(and(is_catagory, ~table.y));
+            amount_correct = sum(and(is_catagory, table.PlayGolf));
+            amount_incorrect = sum(and(is_catagory, ~table.PlayGolf));
                              
             probability_correct = amount_correct/total_win;
             probability_incorrect = amount_incorrect/total_lose;
@@ -126,16 +77,7 @@ function var_map  =  ClassifyData(table)
     var_map('prob_lose') = probability_lose;    
 end
 
-function [training, testing] = SplitData(processed_data, percent_training)
-    training = processed_data;
-    testing = processed_data;
-    traing_size = int32(height(training)*percent_training);
-            
-    testing(1:traing_size,:) = [];
-    training(traing_size:end,:) = [];
-    
-    
-end
+
 
 function results = TestingWithTable(testing_data, classifed_data)
     num_of_data = height(testing_data);
@@ -143,11 +85,11 @@ function results = TestingWithTable(testing_data, classifed_data)
     false_positive = 0;
     true_negitive = 0;
     false_negitive = 0;
-         
+    chance = 0;
     for i = (1:num_of_data)
         testing_row = testing_data(i,:);
         chance = TestOneRow(testing_row, classifed_data);
-        if testing_row.y
+        if testing_row.PlayGolf
             if (chance >= .50)
                 true_positive = true_positive + 1;                
             else
@@ -166,7 +108,7 @@ function results = TestingWithTable(testing_data, classifed_data)
         
     end
     disp([true_positive, false_positive])
-    disp([true_negitive, false_negitive])
+    disp([false_negitive, true_negitive])
         
     results = chance;  
 end
